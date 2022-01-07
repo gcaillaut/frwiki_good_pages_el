@@ -74,3 +74,8 @@ Run the file `get_data.ps1` (or `run_data.sh` on unix) to download the data requ
 
 
 Then, use the `datasets` module from HuggingFace to load the dataset described in `frwiki_good_articles_el.py`.
+
+
+## Why don’t you rely on the XML Wikipedia dump?
+
+Because it is way too complicated, there is no easy-to-use tools to properly parse MediaWiki documents. [Wikitextprocessor](https://github.com/tatuylonen/wikitextprocessor) seems really promising but is not yet capable of parsing non-English Wikipedia dumps.
