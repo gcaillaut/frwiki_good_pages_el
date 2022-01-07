@@ -1,0 +1,9 @@
+__pycache__
+.vscode
+apicache-py3
+core
+logs
+pywikibot.lwp
+throttle.ctrl
+*.pyc
+data
