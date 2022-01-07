@@ -20,7 +20,27 @@ import re
 
 import datasets
 from pathlib import Path
-from funcs import read_file
+
+
+def get_open_method(path):
+    path = Path(path)
+    ext = path.suffix
+
+    if ext == ".gz":
+        import gzip
+        open_func = gzip.open
+    elif ext == ".bz2":
+        import bz2
+        open_func = bz2.open
+    else:
+        open_func = open
+    return open_func
+
+
+def read_file(path):
+    open_func = get_open_method(path)
+    with open_func(path, "rt", encoding="UTF-8") as f:
+        return f.read()
 
 
 # TODO: Add BibTeX citation
