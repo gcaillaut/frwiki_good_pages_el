@@ -47,14 +47,11 @@ def read_file(path):
 # Find for instance the citation on arxiv or on the dataset repo/website
 _CITATION = ""
 
-# TODO: Add description of the dataset here
-# You can copy an official description
 _DESCRIPTION = """\
 French Wikipedia dataset for Entity Linking
 """
 
-# TODO: Add a link to an official homepage for the dataset here
-_HOMEPAGE = ""
+_HOMEPAGE = "https://github.com/GaaH/frwiki_good_pages_el"
 
 # TODO: Add the licence for the dataset here if you can find it
 _LICENSE = ""
@@ -94,7 +91,7 @@ def text_to_el_features(doc_qid, doc_title, text, title2qid, title2wikipedia, ti
         mention_title = m.group(1)
         mention = m.group(2)
 
-        mention_qid = title2qid.get(mention_title, "")
+        mention_qid = title2qid.get(mention_title, "").replace("_", " ")
         mention_wikipedia = title2wikipedia.get(mention_title, "")
         mention_wikidata = title2wikidata.get(mention_title, "")
 
@@ -131,9 +128,9 @@ def text_to_el_features(doc_qid, doc_title, text, title2qid, title2wikipedia, ti
             text_dict["wikidata"].extend([None] * len_mention)
         else:
             len_mention_tail = len(mention_words) - 1
-            wikipedia_words = mention_wikipedia.split()
-            wikidata_words = mention_wikidata.split()
-            title_words = mention_title.replace("_", " ").split()
+            # wikipedia_words = mention_wikipedia.split()
+            # wikidata_words = mention_wikidata.split()
+            # title_words = mention_title.replace("_", " ").split()
 
             text_dict["labels"].extend(["B"] + ["I"] * len_mention_tail)
             text_dict["qids"].extend([mention_qid] + [None] * len_mention_tail)
@@ -154,7 +151,7 @@ def text_to_el_features(doc_qid, doc_title, text, title2qid, title2wikipedia, ti
     text_dict["titles"].extend([None] * len_tail)
     text_dict["wikipedia"].extend([None] * len_tail)
     text_dict["wikidata"].extend([None] * len_tail)
-    res["text"] = text_dict
+    res.update(text_dict)
     return res
 
 
@@ -188,14 +185,12 @@ class FrWikiGoodPagesELDataset(datasets.GeneratorBasedBuilder):
             features = datasets.Features({
                 "title": datasets.Value("string"),
                 "qid": datasets.Value("string"),
-                "text": {
-                    "words": [datasets.Value("string")],
-                    "wikipedia": [datasets.Value("string")],
-                    "wikidata": [datasets.Value("string")],
-                    "labels": [datasets.ClassLabel(names=_CLASS_LABELS)],
-                    "titles": [datasets.Value("string")],
-                    "qids": [datasets.Value("string")],
-                }
+                "words": [datasets.Value("string")],
+                "wikipedia": [datasets.Value("string")],
+                "wikidata": [datasets.Value("string")],
+                "labels": [datasets.ClassLabel(names=_CLASS_LABELS)],
+                "titles": [datasets.Value("string")],
+                "qids": [datasets.Value("string")],
             })
 
         return datasets.DatasetInfo(
