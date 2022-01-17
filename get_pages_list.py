@@ -48,8 +48,6 @@ if __name__ == "__main__":
         "url": [],
     }
 
-    # good_pages = sorted(good_pages)[:1]
-
     all_pages = set()
 
     for title in tqdm(good_pages, total=len(good_pages)):
@@ -89,22 +87,4 @@ if __name__ == "__main__":
     df = pd.DataFrame(cols)
     df.to_csv(str(csv_outpath), index=False,
               quoting=csv.QUOTE_NONNUMERIC, encoding="UTF-8")
-    # elif args.action == "clean":
-    #     import numpy as np
 
-    #     print("reading")
-    #     df = pd.read_csv(str(csv_outpath), dtype=str, na_filter=False)
-    #     print("filtering")
-    #     filters = np.array([
-    #         is_title_to_main_ns(title) and is_url_to_main_ns(url)
-    #         for title, url in tqdm(zip(df["page"], df["url"]), total=len(df))
-    #     ])
-    #     df = df[filters]
-    #     print("saving")
-
-    #     all_pages = sorted(set(df["page"]))
-    #     with open(str(out_path) + "-clean", "wt", encoding="UTF-8") as f:
-    #         f.write("\n".join(all_pages))
-
-    #     df.to_csv(str(csv_outpath) + "-clean", index=False,
-    #               quoting=csv.QUOTE_NONNUMERIC, encoding="UTF-8")

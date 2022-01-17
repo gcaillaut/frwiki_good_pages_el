@@ -3,7 +3,7 @@ $CAT_DIR="${OUT_DIR}/categories"
 $SCRAP_DIR="${OUT_DIR}/scrapped"
 $HTML_DIR="${SCRAP_DIR}/html"
 $PAGES_DIR="${SCRAP_DIR}/pages"
-$WIKIDATA_DUMP_PATH="../wikiEL/dumps/wikidata-20211101-all.json.bz2"
+$WIKIDATA_DUMP_PATH="../data/wikidumps/wikidata-20211101-all.json.bz2"
 
 # Create outputs directories
 foreach ($dir in $OUT_DIR,$CAT_DIR,$SCRAP_DIR,$HTML_DIR,$PAGES_DIR) {
@@ -31,13 +31,15 @@ python list_good_pages.py "$CAT_DIR" "$OUT_DIR/list-good-pages.txt"
 python get_pages_list.py "$OUT_DIR/list-good-pages.txt" "$OUT_DIR/list-all-pages.txt" "$OUT_DIR/list-all-pages.csv" $HTML_DIR --compress gzip
 
 # Download html pages
-python download_html_pages.py "$OUT_DIR/list-all-pages.csv" "$SCRAP_DIR/all-pages-paths.csv" "$SCRAP_DIR/all-pages-paths-errors.csv" $HTML_DIR --compress gzip
+Set-Location wikiscrap
+scrapy crawl wikispider -a input_path="../$OUT_DIR/list-all-pages.csv" -O "../$SCRAP_DIR/html-pages.jl"
+Set-Location ..
 
 # Clean html pages
-python clean_html_pages.py "$SCRAP_DIR/all-pages-paths.csv" $PAGES_DIR "$SCRAP_DIR/frwiki.csv" "$SCRAP_DIR/frwiki-errors.csv" --compress gzip
+python clean_html_pages.py "$SCRAP_DIR/html-pages.jl" "$SCRAP_DIR/cleaned-pages.jl" "$SCRAP_DIR/clean-errors.csv"
 
 # Retrieve Wikidata properties for each page
-python getwikidatapropertiesfromdump.py $WIKIDATA_DUMP_PATH "$SCRAP_DIR/frwiki.csv" "$SCRAP_DIR/wikidata.csv"
+python getwikidatapropertiesfromdump.py $WIKIDATA_DUMP_PATH "$SCRAP_DIR/cleaned-pages.jl" "$SCRAP_DIR/wikidata.csv"
 
 # Build the final dataset
-python build_final_dataset.py "$SCRAP_DIR/frwiki.csv" "$SCRAP_DIR/wikidata.csv" "$SCRAP_DIR/final-dataset.csv"
+python build_final_dataset.py "$OUT_DIR/list-good-pages.txt" "$SCRAP_DIR/cleaned-pages.jl" "$SCRAP_DIR/wikidata.csv" "$SCRAP_DIR/corpus.jsonl.gz" "$SCRAP_DIR/entities.jsonl.gz"

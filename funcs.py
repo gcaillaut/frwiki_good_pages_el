@@ -2,6 +2,7 @@ from pathlib import Path
 from urllib.parse import quote
 import requests
 import gzip
+from unidecode import unidecode
 import bz2
 
 
@@ -11,8 +12,9 @@ def wikipedia_url_from_title(title):
 
 
 def title_to_path(title):
-    for forbidden in r':*?/\" ':
-        title = title.replace(forbidden, '_')
+    title = unidecode(title)
+    for forbidden in r""":*?/\" «»!<>]['""":
+        title = title.replace(forbidden, "")
     return title
 
 
@@ -28,6 +30,7 @@ def html_path_from_title(title, cache_dir, compress="none"):
     path = Path(cache_dir, prefix + title + ext)
     return path
 
+
 def cleaned_page_path_from_title(title, cache_dir, compress="none"):
     compression_ext = {
         "none": ".txt",
@@ -40,6 +43,7 @@ def cleaned_page_path_from_title(title, cache_dir, compress="none"):
     path = Path(cache_dir, prefix + title + ext)
     return path
 
+
 def get_html_page(title, cache_dir=".", compress="none"):
     path = html_path_from_title(title, cache_dir, compress=compress)
     if path.is_file():
@@ -49,6 +53,7 @@ def get_html_page(title, cache_dir=".", compress="none"):
         text = download_page(url)
         write_file(text, path)
     return text
+
 
 def download_page(url):
     r = requests.get(url)

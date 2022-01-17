@@ -106,23 +106,19 @@ if __name__ == "__main__":
     input_path = Path(args.input_path)
     output_path = Path(args.output_path)
 
-    input_df = pd.read_csv(input_path, dtype=str, na_filter=False)
-    valid_qids = set(input_df["qid"]).difference({""})
-    del input_df
-
-    # Do not rely on title because multiple page (with different titles) share the same qid
-    # qid2title = dict(zip(input_df["qid"], df["title"]))
-    # del qid2title[""]  # removes empty qid
+    valid_qids = set()
+    with open(input_path, "rt", encoding="UTF-8") as f:
+        for line in f:
+            item = json.loads(line)
+            valid_qids.add(item["qid"])
+    valid_qids = valid_qids.difference({""})
 
     cols = {
-        # "id": [],
         "qid": [],
-        # "title": [],
         "wikidata_description": [],
         "label": [],
         "aliases": [],
         "type": [],
-        # "url": [],
     }
 
     treated_items = 0
@@ -147,7 +143,6 @@ if __name__ == "__main__":
                         item_type = get_item_type(item)
 
                         cols["qid"].append(qid)
-                        # cols["title"].append(qid2title[qid])
                         cols["wikidata_description"].append(
                             description)
                         cols["label"].append(label)

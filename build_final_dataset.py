@@ -3,7 +3,9 @@ from pandas.io import parsers
 from funcs import read_file
 from pathlib import Path
 import csv
+import json
 from tqdm import tqdm
+import gzip
 
 
 def extract_wikipedia_description(text):
@@ -18,63 +20,62 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("frwiki_path")
+    parser.add_argument("good_pages_path")
+    parser.add_argument("cleaned_pages_path")
     parser.add_argument("wikidata_path")
-    parser.add_argument("output_path")
+    parser.add_argument("output_corpus_path")
+    parser.add_argument("output_entities_path")
 
     args = parser.parse_args()
 
+    with open(args.good_pages_path, "rt", encoding="UTF-8") as f:
+        good_pages_list = set(f.read().split("\n")).difference("")
+
     # Columns: qid, title, path, url
-    frwiki = pd.read_csv(args.frwiki_path, dtype=str, na_filter=False)
+    title2text = {}
+    title2qid = {}
+    frwiki_cols = {"qid": [], "title": [],
+                   "url": [], "wikipedia_description": []}
+    with open(args.cleaned_pages_path, "rt", encoding="UTF-8") as f:
+        for line in f:
+            item = json.loads(line)
+            title = item["title"]
+            title2qid[title] = item["qid"]
+            if title in good_pages_list:
+                title2text[title] = item["text"]
+
+            frwiki_cols["qid"].append(item["qid"])
+            frwiki_cols["title"].append(title)
+            frwiki_cols["url"].append(item["url"])
+            frwiki_cols["wikipedia_description"].append(
+                extract_wikipedia_description(item["text"]))
+    frwiki = pd.DataFrame(frwiki_cols)
+    del frwiki_cols
+
     # Columns: qid, title, wikidata_description, label, aliases, type
     wikidata = pd.read_csv(args.wikidata_path, dtype=str,
                            index_col="qid", na_filter=False)
 
-    output_path = Path(args.output_path)
+    output_corpus_path = Path(args.output_corpus_path)
+    output_entities_path = Path(args.output_entities_path)
 
     merged = pd.merge(frwiki, wikidata, how="left",
                       left_on="qid", right_index=True)
-    # joined = frwiki.join(wikidata, lsuffix="_frwiki", rsuffix="_wikidata", on="qid")
     del frwiki
     del wikidata
 
-    # cols = {
-    #     "qid": [],
-    #     "title": [],
-    #     "aliases": [],
-    #     "type": [],
-    #     "path": [],
-    #     "url": [],
-    #     "wikidata_description": [],
-    #     "wikipedia_description": [],
-    #     "label": [],
-    # }
+    with gzip.open(output_corpus_path, "wt", encoding="UTF-8") as outfile:
+        for title in good_pages_list.intersection(title2qid.keys()):
+            item = {
+                "title": title,
+                "qid": title2qid[title],
+                "text": title2text[title],
+            }
+            json.dump(item, outfile)
+            outfile.write("\n")
 
-    # for x in tqdm(merged.itertuples(index=False), total=len(merged)):
-    #     try:
-    #         desc = wikipedia_description_from_path(x.path)
-    #         cols["qid"].append(x.qid)
-    #         cols["title"].append(x.title)
-    #         cols["aliases"].append(x.aliases)
-    #         cols["type"].append(x.type)
-    #         cols["path"].append(x.path)
-    #         cols["url"].append(x.url)
-    #         cols["wikidata_description"].append(x.wikidata_description)
-    #         cols["wikipedia_description"].append(desc)
-    #         cols["label"].append(x.label)
-    #     except FileNotFoundError:
-    #         print(f"File `{x.path}` does not exists")
-
-    wikipedia_descriptions = []
-    for path in tqdm(merged["path"]):
-        try:
-            desc = wikipedia_description_from_path(path)
-            wikipedia_descriptions.append(desc)
-        except FileNotFoundError:
-            wikipedia_descriptions.append("")
-            print(f"File `{path}` does not exists")
-
-    merged["wikipedia_description"] = wikipedia_descriptions
-
-    merged.to_csv(output_path, index=False,
-                  quoting=csv.QUOTE_NONNUMERIC, encoding="UTF-8")
+    with gzip.open(output_entities_path, "wt", encoding="UTF-8") as outfile:
+        for rowid in range(len(merged)):
+            item = {c: merged[c][rowid] for c in merged.columns}
+            json.dump(item, outfile)
+            outfile.write("\n")

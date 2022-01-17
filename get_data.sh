@@ -5,7 +5,7 @@ CAT_DIR="${OUT_DIR}/categories"
 SCRAP_DIR="${OUT_DIR}/scrapped"
 HTML_DIR="${SCRAP_DIR}/html"
 PAGES_DIR="${SCRAP_DIR}/pages"
-WIKIDATA_DUMP_PATH="../wikiEL/dumps/wikidata-20211101-all.json.bz2"
+WIKIDATA_DUMP_PATH="../data/wikidumps/wikidata-20211101-all.json.bz2"
 
 # Create outputs directories
 for DIR in ${OUT_DIR} ${CAT_DIR} ${SCRAP_DIR} ${HTML_DIR} ${PAGES_DIR}; do
@@ -29,18 +29,19 @@ python core/pwb.py listpages -cat:Catégorie:Wikipédia:Articles_de_qualité/Jus
 # Build a file listing titles of good and featured articles
 python list_good_pages.py "$CAT_DIR" "$OUT_DIR/list-good-pages.txt"
 
-# Get the list of all pages to download
+# Get the list of all pages to download by extracting links from good pages
 python get_pages_list.py "$OUT_DIR/list-good-pages.txt" "$OUT_DIR/list-all-pages.txt" "$OUT_DIR/list-all-pages.csv" $HTML_DIR --compress gzip
 
 # Download html pages
-python download_html_pages.py "$OUT_DIR/list-all-pages.csv" "$SCRAP_DIR/all-pages-paths.csv" "$SCRAP_DIR/all-pages-paths-errors.csv" $HTML_DIR --compress gzip
+cd wikiscrap
+scrapy crawl wikispider -a input_path="../$OUT_DIR/list-all-pages.csv" -O "../$SCRAP_DIR/html-pages.jl"
+cd ..
 
 # Clean html pages
-python clean_html_pages.py "$SCRAP_DIR/all-pages-paths.csv" $PAGES_DIR "$SCRAP_DIR/frwiki.csv" "$SCRAP_DIR/frwiki-errors.csv" --compress gzip
+python clean_html_pages.py "$SCRAP_DIR/html-pages.jl" "$SCRAP_DIR/cleaned-pages.jl" "$SCRAP_DIR/clean-errors.csv"
 
 # Retrieve Wikidata properties for each page
-python getwikidatapropertiesfromdump.py ${WIKIDATA_DUMP_PATH} "$SCRAP_DIR/frwiki.csv" "$SCRAP_DIR/wikidata-ujson.csv"
-# python core/pwb.py getwikidataproperties -file:"$OUT_DIR/scrapped/list-all-pages.txt" -save:"$OUT_DIR/scrapped/wikidata.csv"
+python getwikidatapropertiesfromdump.py $WIKIDATA_DUMP_PATH "$SCRAP_DIR/cleaned-pages.jl" "$SCRAP_DIR/wikidata.csv"
 
 # Build the final dataset
-python build_final_dataset.py
+python build_final_dataset.py "$OUT_DIR/list-good-pages.txt" "$SCRAP_DIR/cleaned-pages.jl" "$SCRAP_DIR/wikidata.csv" "$SCRAP_DIR/corpus.jsonl.gz" "$SCRAP_DIR/entities.jsonl.gz"
