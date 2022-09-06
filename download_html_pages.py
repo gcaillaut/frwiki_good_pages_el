@@ -47,7 +47,7 @@ if __name__ == "__main__":
     }
 
     existing_html_pages = {
-        p.resolve()
+        p
         for p in html_cache_dir.iterdir()
     }
 
@@ -68,12 +68,12 @@ if __name__ == "__main__":
     try:
         for i, (title, url) in tqdm(enumerate(zip(df_pages["page"], df_pages["url"])), total=len(df_pages)):
             path = html_path_from_title(
-                title, html_cache_dir, compress=args.compress).resolve()
+                title, html_cache_dir, compress=args.compress)
             try:
                 # print(f"Downloading `{title}`...")
 
-                if path not in existing_html_pages:
-                    # if not path.is_file():
+                # if path not in existing_html_pages:
+                if not path.is_file():
                     text = download_page(url)
                     write_file(text, path)
                     existing_html_pages.add(path)
